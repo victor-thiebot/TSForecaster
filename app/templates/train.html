@@ -1,0 +1,42 @@
+<form id="configForm">
+    <label for="datasetPath">Dataset Path:</label>
+    <input type="text" id="datasetPath" name="datasetPath" required>
+
+    <label for="modelType">Model Type:</label>
+    <select id="modelType" name="modelType" required>
+        <option value="lstm">LSTM</option>
+        <option value="gru">GRU</option>
+        <option value="transformer">Transformer</option>
+    </select>
+
+    <!-- Add more input fields for model parameters -->
+
+    <button type="button" id="saveLoadButton">Save/Load YAML</button>
+    <button type="button" id="trainButton">Train Model</button>
+</form>
+
+<script>
+    document.getElementById('saveLoadButton').addEventListener('click', function () {
+        // Implement the logic to save or load the YAML configuration file
+        // You can use the File API or a library like js-yaml to handle YAML files
+    });
+
+    document.getElementById('trainButton').addEventListener('click', function () {
+        const formData = new FormData(document.getElementById('configForm'));
+        const configParams = Object.fromEntries(formData.entries());
+
+        fetch('/train', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(configParams)
+        })
+            .then(response => {
+                // Handle the response from the backend server
+            })
+            .catch(error => {
+                // Handle any errors that occurred during the request
+            });
+    });
+</script>
