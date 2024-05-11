@@ -178,6 +178,61 @@ class DataPreprocessor:
 
 
 class DataSplitter:
+    def __init__(
+        self,
+        X,
+        y,
+        input_seq_length,
+        output_seq_length,
+        test_size=0.2,
+        random_state=None,
+    ):
+        self.X = X
+        self.y = y
+        self.input_seq_length = input_seq_length
+        self.output_seq_length = output_seq_length
+        self.test_size = test_size
+        self.random_state = random_state
+
+    def split_data(self):
+        # Calculate the number of complete sequences in the dataset
+        num_sequences = len(self.X) - self.input_seq_length - self.output_seq_length + 1
+
+        # Split the data into train and test sets
+        train_size = int((1 - self.test_size) * num_sequences)
+        X_train = self.X[:train_size + self.input_seq_length - 1]
+        X_test = self.X[train_size:]
+        y_train = self.y[self.input_seq_length - 1 : train_size + self.input_seq_length + self.output_seq_length - 1]
+        y_test = self.y[train_size + self.input_seq_length - 1:]
+
+        return X_train, X_test, y_train, y_test
+
+    def create_sklearn_datasets(self):
+        X_train, X_test, y_train, y_test = self.split_data()
+        X_train_seq, y_train_seq = self._create_sequences(X_train, y_train)
+        X_test_seq, y_test_seq = self._create_sequences(X_test, y_test)
+        return X_train_seq, X_test_seq, y_train_seq, y_test_seq
+
+    def _create_sequences(self, X, y):
+        input_seq = []
+        target_seq = []
+        for i in range(len(X) - self.input_seq_length - self.output_seq_length + 1):
+            input_seq.append(X[i : i + self.input_seq_length])
+            target_seq.append(y[i + self.input_seq_length : i + self.input_seq_length + self.output_seq_length])
+        return np.array(input_seq), np.array(target_seq)
+
+    def create_pytorch_datasets(self):
+        X_train, X_test, y_train, y_test = self.split_data()
+        train_dataset = TimeSeriesDatasetPyTorch(
+            X_train, y_train, self.input_seq_length, self.output_seq_length
+        )
+        test_dataset = TimeSeriesDatasetPyTorch(
+            X_test, y_test, self.input_seq_length, self.output_seq_length
+        )
+        return train_dataset, test_dataset
+
+
+class DataSplitter:
     def __init__(self, X, y, test_size=0.2, random_state=None):
         self.X = X
         self.y = y
