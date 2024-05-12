@@ -121,94 +121,111 @@ class TimeSeries:
 class TimeSeriesDataset:
     """Collection of Time Series."""
 
-    def __init__(self, time_series_list: List[TimeSeries]):
-        self.time_series_list = time_series_list
+    def __init__(self, x_list: List[TimeSeries], y_list: List[TimeSeries]):
+        assert len(x_list) == len(
+            y_list
+        ), "Input and output time series must have the same length."
+        self.x_list = x_list
+        self.y_list = y_list
 
     def __len__(self):
-        return len(self.time_series_list)
+        return len(self.x_list)
 
     def __getitem__(self, idx):
         if isinstance(idx, int):
-            return self.time_series_list[idx]
+            return self.x_list[idx], self.y_list[idx]
         elif isinstance(idx, slice):
-            return TimeSeriesDataset(self.time_series_list[idx])
+            return TimeSeriesDataset(self.x_list[idx], self.y_list[idx])
         else:
             raise TypeError("Invalid argument type.")
 
     def __iter__(self):
-        return iter(self.time_series_list)
+        return iter(zip(self.x_list, self.y_list))
 
     def __repr__(self):
         return f"TimeSeriesDataset(num_series={len(self)})"
 
     def copy(self):
-        return TimeSeriesDataset([ts.copy() for ts in self.time_series_list])
+        return TimeSeriesDataset(
+            [ts.copy() for ts in self.x_list], [ts.copy() for ts in self.y_list]
+        )
 
-    def append(self, ts: TimeSeries):
-        self.time_series_list.append(ts)
+    def append(self, x: TimeSeries, y: TimeSeries):
+        self.x_list.append(x)
+        self.y_list.append(y)
 
     def extend(self, ts_dataset: "TimeSeriesDataset"):
-        self.time_series_list.extend(ts_dataset.time_series_list)
+        self.x_list.extend(ts_dataset.x_list)
+        self.y_list.extend(ts_dataset.y_list)
 
     def save_to_directory(
-        self, directory: Union[Path, str], ts_filename_prefix: str = "ts_"
+        self,
+        directory: Union[Path, str],
+        x_filename_prefix: str = "x_",
+        y_filename_prefix: str = "y_",
     ):
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
-        for i, ts in enumerate(tqdm(self.time_series_list, desc="Saving time series")):
-            filename = f"{ts_filename_prefix}{i}.json"
-            ts.to_json(directory / filename)
+        for i, (x, y) in enumerate(tqdm(self, desc="Saving time series")):
+            x_filename = f"{x_filename_prefix}{i}.json"
+            y_filename = f"{y_filename_prefix}{i}.json"
+            x.to_json(directory / x_filename)
+            y.to_json(directory / y_filename)
 
     @classmethod
     def load_from_directory(
-        cls, directory: Union[Path, str], ts_filename_prefix: str = "ts_"
+        cls,
+        directory: Union[Path, str],
+        x_filename_prefix: str = "x_",
+        y_filename_prefix: str = "y_",
     ):
         directory = Path(directory)
-        time_series_list = []
-        for file in directory.glob(f"{ts_filename_prefix}*.json"):
-            ts = TimeSeries.from_json(file)
-            time_series_list.append(ts)
-        return cls(time_series_list)
+        x_list = []
+        y_list = []
+        for i in range(len(list(directory.glob(f"{x_filename_prefix}*.json")))):
+            x_file = directory / f"{x_filename_prefix}{i}.json"
+            y_file = directory / f"{y_filename_prefix}{i}.json"
+            x = TimeSeries.from_json(x_file)
+            y = TimeSeries.from_json(y_file)
+            x_list.append(x)
+            y_list.append(y)
+        return cls(x_list, y_list)
 
     @property
     def shape(self):
-        return [ts.shape for ts in self.time_series_list]
+        return [(x.shape, y.shape) for x, y in self]
 
 
 def split_train_val_test(
-    data_x: TimeSeriesDataset,
-    data_y: TimeSeriesDataset,
+    dataset: TimeSeriesDataset,
     val_portion: float = 0.2,
     test_portion: float = 0.2,
     split_method: str = "sequential",
     verbose: bool = True,
 ) -> Tuple[TimeSeriesDataset, TimeSeriesDataset, TimeSeriesDataset]:
-    assert len(data_x) == len(
-        data_y
-    ), "Input and output time series must have the same length."
-
     if split_method != "sequential":
         raise NotImplementedError(f"split_method={split_method} is not supported.")
 
-    train_size = int(len(data_x) * (1 - val_portion - test_portion))
-    val_size = int(len(data_x) * val_portion)
+    train_size = int(len(dataset) * (1 - val_portion - test_portion))
+    val_size = int(len(dataset) * val_portion)
 
-    train_x, val_x, test_x = (
-        data_x[:train_size],
-        data_x[train_size : train_size + val_size],
-        data_x[train_size + val_size :],
+    train_dataset = TimeSeriesDataset(
+        dataset.x_list[:train_size], dataset.y_list[:train_size]
     )
-    train_y, val_y, test_y = (
-        data_y[:train_size],
-        data_y[train_size : train_size + val_size],
-        data_y[train_size + val_size :],
+    val_dataset = TimeSeriesDataset(
+        dataset.x_list[train_size : train_size + val_size],
+        dataset.y_list[train_size : train_size + val_size],
     )
+    test_dataset = TimeSeriesDataset(
+        dataset.x_list[train_size + val_size :], dataset.y_list[train_size + val_size :]
+    )
+
     if verbose:
         print(
-            f"Train size: {len(train_x)}, Val size: {len(val_x)}, Test size: {len(test_x)}"
+            f"Train size: {len(train_dataset)}, Val size: {len(val_dataset)}, Test size: {len(test_dataset)}"
         )
 
-    return (train_x, train_y), (val_x, val_y), (test_x, test_y)
+    return train_dataset, val_dataset, test_dataset
 
 
 def ts_random_crop(

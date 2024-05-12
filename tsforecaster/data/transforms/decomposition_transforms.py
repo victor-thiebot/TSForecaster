@@ -55,31 +55,6 @@ class DecompositionTransform(TimeSeriesTransform):
             metadata=ts.metadata,
         )
 
-    # def inverse_transform(self, ts: TimeSeries) -> TimeSeries:
-    #     # Inverse the decomposition transformation
-    #     item_metadata = self.metadata.get(ts.item_id)
-    #     if item_metadata is None:
-    #         raise ValueError(
-    #             f"No decomposition metadata found for item_id: {ts.item_id}"
-    #         )
-
-    #     if item_metadata["decomposition_method"] in [
-    #         "STL",
-    #         "classical",
-    #         "multiplicative",
-    #     ]:
-    #         decomposition = item_metadata["decomposition"]
-
-    #         reconstructed_values = (
-    #             decomposition.trend + decomposition.seasonal + decomposition.resid
-    #         )
-    #     return TimeSeries(
-    #         values=reconstructed_values,
-    #         timestamps=ts.timestamps,
-    #         item_id=ts.item_id,
-    #         metadata=ts.metadata,
-    #     )
-
     def inverse_transform(self, ts: TimeSeries) -> TimeSeries:
         # Inverse the decomposition transformation
         item_metadata = self.metadata.get(ts.item_id)

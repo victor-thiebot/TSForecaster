@@ -14,25 +14,7 @@ def import_data_from_csv(file_path, frequency=None):
     return None
 
 
-# def read_time_series_csv(file_path, frequency, fill_method="linear"):
-#     df = pd.read_csv(file_path)
-#     assert "Date" in df.columns, "The CSV file must contain a 'Date' column."
-#     df["Date"] = pd.to_datetime(df["Date"])
-#     assert df["Date"].notnull().all(), "The 'Date' column must not contain null values."
-#     df = df.sort_values("Date").reset_index(drop=True)
-
-#     # Interpolate missing values
-#     if fill_method is not None:
-#         df = df.set_index("Date")
-#         df = df.interpolate(method=fill_method)
-#         df = df.reset_index()
-
-#     if frequency is not None:
-#         df = df.set_index("Date").resample(frequency).mean().reset_index()
-#     return df
-
-
-def read_time_series_csv(file_path, frequency=None, date_column="Date"):
+def read_time_series_csv(file_path, frequency="D", date_column="Date"):
     # Load the data
     df = pd.read_csv(file_path)
 

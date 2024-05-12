@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
+import numpy as np
 
 from tsforecaster.data.timeseries import TimeSeriesDataset
 
@@ -18,6 +19,13 @@ class DataModule:
         self.test_dataset = test_dataset
         self.batch_size = batch_size
         self.num_workers = num_workers
+
+    def __repr__(self):
+        return (
+            f"DataModule(train_dataset={self.train_dataset}, "
+            f"val_dataset={self.val_dataset}, test_dataset={self.test_dataset}, "
+            f"batch_size={self.batch_size}, num_workers={self.num_workers})"
+        )
 
     def train_dataloader(self):
         return DataLoader(
@@ -55,8 +63,19 @@ class TimeSeriesDatasetTorch(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        x = self.dataset[idx].values
-        return torch.from_numpy(x).float()
+        x, y = self.dataset[idx]
+        x_values = x.values
+        y_values = y.values
+
+        if not isinstance(x_values, np.ndarray):
+            raise ValueError(
+                f"TimeSeries values must be a numpy array, but got {type(x_values)}"
+            )
+
+        # Add channel dimension to the input data
+        x_values = x_values.reshape(1, -1)
+
+        return torch.from_numpy(x_values).float(), torch.from_numpy(y_values).float()
 
 
 class CroppedTimeSeriesDatasetTorch(Dataset):
