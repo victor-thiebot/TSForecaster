@@ -34,6 +34,7 @@ def get_device():
     """
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+
 def train(model, data_module, epochs, optimizer, loss_fn, device, eval_frequency=1):
     """
     Trains the given model using the specified data module, optimizer, loss function, and device.
@@ -68,7 +69,7 @@ def train_epoch(model, data_loader, optimizer, loss_fn, device):
     model.train()
     epoch_loss = 0.0
     for data in data_loader:
-        x, y = data[0], data[1]  # Assuming input and target are the first two elements
+        x, y = data[0], data[1]
         x, y = x.to(device), y.to(device)
         optimizer.zero_grad()
         y_hat = model(x)
@@ -90,7 +91,7 @@ def eval_epoch(model, data_loader, loss_fn, device):
             x, y = (
                 data[0],
                 data[1],
-            )  # Assuming input and target are the first two elements
+            ) 
             x, y = x.to(device), y.to(device)
             y_hat = model(x)
             loss = loss_fn(y_hat, y)

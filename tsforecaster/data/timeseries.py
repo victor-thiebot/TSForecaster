@@ -127,6 +127,8 @@ class TimeSeriesDataset:
         ), "Input and output time series must have the same length."
         self.x_list = x_list
         self.y_list = y_list
+        self.n_channels_x = x_list[0].shape[1]
+        self.n_channels_y = y_list[0].shape[1]
 
     def __len__(self):
         return len(self.x_list)

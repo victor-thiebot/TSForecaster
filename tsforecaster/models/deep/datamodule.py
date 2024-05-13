@@ -64,52 +64,19 @@ class TimeSeriesDatasetTorch(Dataset):
             idx = idx.tolist()
 
         x, y = self.dataset[idx]
-        x_values = x.values
-        y_values = y.values
+        # x_values = x.values
+        # y_values = y.values
 
-        if not isinstance(x_values, np.ndarray):
-            raise ValueError(
-                f"TimeSeries values must be a numpy array, but got {type(x_values)}"
-            )
+        # if not isinstance(x_values, np.ndarray):
+        #     raise ValueError(
+        #         f"TimeSeries values must be a numpy array, but got {type(x_values)}"
+        #     )
 
-        # Add channel dimension to the input data
-        x_values = x_values.reshape(1, -1)
+        # # Add channel dimension to the input data
+        # x_values = x_values.reshape(1, -1)
+
+        # return torch.from_numpy(x_values).float(), torch.from_numpy(y_values).float()
+        x_values = x.values.reshape(self.dataset.n_channels_x, -1)
+        y_values = y.values.reshape(self.dataset.n_channels_y, -1)
 
         return torch.from_numpy(x_values).float(), torch.from_numpy(y_values).float()
-
-
-class CroppedTimeSeriesDatasetTorch(Dataset):
-    def __init__(
-        self,
-        dataset: TimeSeriesDataset,
-        window_length: int,
-        stride: int = 1,
-    ):
-        self.dataset = dataset
-        self.window_length = window_length
-        self.stride = stride
-
-    def __len__(self):
-        return sum(
-            (len(ts) - self.window_length) // self.stride + 1 for ts in self.dataset
-        )
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        ts_idx = 0
-        window_idx = idx
-        while (
-            window_idx
-            >= (len(self.dataset[ts_idx]) - self.window_length) // self.stride + 1
-        ):
-            window_idx -= (
-                len(self.dataset[ts_idx]) - self.window_length
-            ) // self.stride + 1
-            ts_idx += 1
-
-        start = window_idx * self.stride
-        end = start + self.window_length
-        x = self.dataset[ts_idx].values[start:end]
-        return torch.from_numpy(x).float()
